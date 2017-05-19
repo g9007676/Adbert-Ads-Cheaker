@@ -134,6 +134,12 @@ var createHtml = function (requests){
         }
     });
 
+    appendGtmTr({
+        gtm:gtm,
+        gtm_datahub:gtm_datahub,
+        collect:collect
+    });
+
     appendFbTr({
         is_js_suc:is_fbjs_suc,
         is_pageview_suc:is_fbpageview_suc,
@@ -161,6 +167,57 @@ var createHtml = function (requests){
     bindWebRequestListener = undefined;
     bindPageUpdatedListener = undefined;
     hideLoadingPage();
+}
+
+var appendGtmTr = function(ret) {
+    var _table = document.getElementById("gtmtable").tBodies[0];
+
+    console.log(ret);
+    ret.gtm.forEach(function(value, index) {
+        var item = [];
+        item['gid'] = value;
+        item['data'] = false;
+        item['tid'] = false;
+
+        ret.gtm_datahub.forEach(function(gvalue, gindex) {
+            if (value == gvalue) {
+                item['data'] = true;
+            }
+        });
+
+        ret.collect.forEach(function(cvalue, cindex) {
+            if (cvalue['gtm'] == value) {
+                item['tid'] = cvalue['tid'];
+            }
+        });
+        var _row = _table.insertRow(_table.rows.length);
+        var cell1 = _row.insertCell(0);
+        var cell2 = _row.insertCell(1);
+        var cell3 = _row.insertCell(2);
+
+        if (! item['gid']) {
+            gtm_dom = getFailImg();
+        } else {
+            gtm_dom = document.createTextNode(item['gid']);
+        }
+
+        if (! item['tid']) {
+            ga_dom = getFailImg();
+        } else {
+            ga_dom = document.createTextNode(item['tid']);
+        }
+
+
+        if (! item['data']) {
+            gtm_datahub_dom = getFailImg();
+        } else {
+            gtm_datahub_dom = getSuccessImg();
+        }
+
+        cell1.appendChild(gtm_dom);
+        cell2.appendChild(ga_dom);
+        cell3.appendChild(gtm_datahub_dom);
+    });
 }
 
 var appendAdTr = function(ret){
