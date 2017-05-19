@@ -1,0 +1,24 @@
+{
+    "manifest_version": 2,
+    "name": "AdChecker",
+    "version": "1.0",
+    "description": "check GA | Adwords | FB pixel code Run correctly",
+
+    "permissions": [
+        "webRequest",
+        "webRequestBlocking",
+        "<all_urls>",
+        "tabs"
+    ],
+    "background": {
+        "persistent": true,
+        "scripts": ["background.js"]
+    },
+    "content_scripts": [{
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+    }],
+    "browser_action": {
+        "default_popup": "popup.html"
+    }
+}
