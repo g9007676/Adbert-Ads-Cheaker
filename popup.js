@@ -128,6 +128,9 @@ var createHtml = function (requests){
         obj.statusCode == 200) {
             ad_id = obj.url.match(/(\d+)/i)[0];
             is_adpageview_suc = true;
+        } else if (obj.url.match(/in\.datahub\.events\/\w+\?/g) &&
+        obj.statusCode == 200) {
+            gtm_datahub.push(query_string['gtm']);
         }
     });
 
