@@ -88,8 +88,12 @@ var createHtml = function (requests){
         parser.href = obj.url;
         query_string = getJsonFromUrl(parser.search);
 
-        if (obj.url.match(/www\.googletagmanager\.com\/gtm\.js/g) && obj.statusCode == 200) {
-            gtm.push(query_string['id']);
+        if (obj.url.match(/www\.googletagmanager\.com\/gtm\.js/g)) {
+            if (obj.statusCode == 200) {
+                gtm.push({'gtm': query_string['id'], 'ret' : true});
+            } else {
+                gtm.push({'gtm': query_string['id'], 'ret' : false});
+            }
         }else if (obj.url.match(/www\.googleadservices\.com\/pagead\/(conversion|conversion_async)\.js/g) && obj.statusCode == 200) {
             is_adjs_suc = true;
         } else if (obj.url.match(/www\.google-analytics\.com\/analytics\.js/g) && obj.statusCode == 200) {
@@ -115,8 +119,12 @@ var createHtml = function (requests){
                 is_gapageview_suc = true;
             }
 
-            if (query_string['gtm'] && query_string['tid'] && obj.statusCode == 200) {
-                collect.push({'tid': query_string['tid'], 'gtm': query_string['gtm']});
+            if (query_string['gtm'] && query_string['tid']) {
+                if (obj.statusCode == 200) {
+                    collect.push({'tid': query_string['tid'], 'gtm': query_string['gtm'], 'ret': true});
+                } else {
+                    collect.push({'tid': query_string['tid'], 'gtm': query_string['gtm'], 'ret': false});
+                }
             }
 
         } else if (obj.url.match(/stats\.g\.doubleclick\.net\/r\/collect\?/g)) {
@@ -128,9 +136,12 @@ var createHtml = function (requests){
         obj.statusCode == 200) {
             ad_id = obj.url.match(/(\d+)/i)[0];
             is_adpageview_suc = true;
-        } else if (obj.url.match(/in\.datahub\.events\/\w+\?/g) &&
-        obj.statusCode == 200) {
-            gtm_datahub.push(query_string['gtm']);
+        } else if (obj.url.match(/in\.datahub\.events\/\w+\?/g)) {
+            if (obj.statusCode == 200) {
+                gtm_datahub.push({'gtm': query_string['gtm'], 'ret' : true});
+            } else {
+                gtm_datahub.push({'gtm': query_string['gtm'], 'ret' : false});
+            }
         }
     });
 
@@ -175,21 +186,24 @@ var appendGtmTr = function(ret) {
     console.log(ret);
     ret.gtm.forEach(function(value, index) {
         var item = [];
-        item['gid'] = value;
+        
+        item['gid'] = (value.ret) ? value.gtm : false;
         item['data'] = false;
         item['tid'] = false;
 
         ret.gtm_datahub.forEach(function(gvalue, gindex) {
-            if (value == gvalue) {
+            if (item['gid'] == gvalue['gtm'] && gvalue.ret) {
                 item['data'] = true;
             }
         });
 
         ret.collect.forEach(function(cvalue, cindex) {
-            if (cvalue['gtm'] == value) {
+            if (cvalue['gtm'] ==  item['gid'] && cvalue.ret) {
                 item['tid'] = cvalue['tid'];
             }
         });
+
+        console.log(item);
         var _row = _table.insertRow(_table.rows.length);
         var cell1 = _row.insertCell(0);
         var cell2 = _row.insertCell(1);
