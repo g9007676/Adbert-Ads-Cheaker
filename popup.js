@@ -84,7 +84,7 @@ var createHtml = function (requests){
         parser.href = obj.url;
         query_string = getJsonFromUrl(parser.search);
 
-        if (obj.url.match(/www\.googleadservices\.com\/pagead\/conversion\.js/g) && obj.statusCode == 200) {
+        if (obj.url.match(/www\.googleadservices\.com\/pagead\/(conversion|conversion_async)\.js/g) && obj.statusCode == 200) {
             is_adjs_suc = true;
         } else if (obj.url.match(/www\.google-analytics\.com\/analytics\.js/g) && obj.statusCode == 200) {
             is_gajs_suc = true;
