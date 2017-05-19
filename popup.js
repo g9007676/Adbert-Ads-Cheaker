@@ -79,20 +79,24 @@ var createHtml = function (requests){
     var is_adjs_suc = false;
     var ad_id = '';
 
+    var gtm = [];
+    var gtm_datahub = [];
+    var collect = [];
+
     requests.forEach(function(obj){
         var parser = document.createElement('a');
         parser.href = obj.url;
         query_string = getJsonFromUrl(parser.search);
 
-        if (obj.url.match(/www\.googleadservices\.com\/pagead\/(conversion|conversion_async)\.js/g) && obj.statusCode == 200) {
+        if (obj.url.match(/www\.googletagmanager\.com\/gtm\.js/g) && obj.statusCode == 200) {
+            gtm.push(query_string['id']);
+        }else if (obj.url.match(/www\.googleadservices\.com\/pagead\/(conversion|conversion_async)\.js/g) && obj.statusCode == 200) {
             is_adjs_suc = true;
         } else if (obj.url.match(/www\.google-analytics\.com\/analytics\.js/g) && obj.statusCode == 200) {
             is_gajs_suc = true;
-
         } else if (obj.url.match(/connect\.facebook\.net\/en_US\/fbevents\.js/g) && obj.statusCode == 200) {
             is_fbjs_suc = (obj.statusCode == 200) ? true : false;
-        } else if (obj.url.match(/https:\/\/www\.facebook\.com\/tr\/\?.*/g)) {
-
+        } else if (obj.url.match(/https:\/\/www\.facebook\.com\/tr\/\?.*/g)  && obj.statusCode == 200) {
             if (query_string['id']) {
                 fb_id = query_string['id'];
             }
@@ -104,11 +108,17 @@ var createHtml = function (requests){
             if (query_string['ev'] == 'Microdata' && obj.statusCode == 200) {
                 is_fbMicrodata_suc = true;
             }
+
         } else if (obj.url.match(/www\.google-analytics\.com\/collect\?/g)) {
             if (query_string['tid']  && obj.statusCode == 200) {
                 ga_id = query_string['tid'];
                 is_gapageview_suc = true;
             }
+
+            if (query_string['gtm'] && query_string['tid'] && obj.statusCode == 200) {
+                collect.push({'tid': query_string['tid'], 'gtm': query_string['gtm']});
+            }
+
         } else if (obj.url.match(/stats\.g\.doubleclick\.net\/r\/collect\?/g)) {
             if (query_string['tid']  && obj.statusCode == 200) {
                 ga_id = query_string['tid'];
