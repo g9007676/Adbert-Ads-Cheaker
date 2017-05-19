@@ -104,17 +104,17 @@ var createHtml = function (requests){
             if (query_string['ev'] == 'Microdata' && obj.statusCode == 200) {
                 is_fbMicrodata_suc = true;
             }
-        } else if (obj.url.match(/https:\/\/www\.google-analytics\.com\/collect\?/g)) {
+        } else if (obj.url.match(/www\.google-analytics\.com\/collect\?/g)) {
             if (query_string['tid']  && obj.statusCode == 200) {
                 ga_id = query_string['tid'];
                 is_gapageview_suc = true;
             }
-        } else if (obj.url.match(/https:\/\/stats\.g\.doubleclick\.net\/r\/collect\?/g)) {
+        } else if (obj.url.match(/stats\.g\.doubleclick\.net\/r\/collect\?/g)) {
             if (query_string['tid']  && obj.statusCode == 200) {
                 ga_id = query_string['tid'];
                 is_gapageview_suc = true;
             }
-        } else if (obj.url.match(/https:\/\/www\.google\.com\.tw\/ads\/user-lists\/([0-9]+)\/\?random*/g) &&
+        } else if (obj.url.match(/www\.google\.com\.tw\/ads\/user-lists\/([0-9]+)\/\?random*/g) &&
         obj.statusCode == 200) {
             ad_id = obj.url.match(/(\d+)/i)[0];
             is_adpageview_suc = true;
