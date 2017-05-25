@@ -72,58 +72,88 @@ var webRequestCallback = function(details) {
 
 var createHtml = function (requests){
     var reg;
-    var return_msg = [];
-    var is_fbjs_suc = false;
-    var is_fbpageview_suc = false;
-    var is_fbMicrodata_suc = false;
-    var fb_id = '';
+
+    var is_fbjs_suc = null;
+
+    var fb = [];
     var query_string = '';
 
     var is_gapageview_suc = false;
-    var is_gajs_suc = false;
-    var ga_id = '';
+    var is_gajs_suc = null;
+    var ga = [];
 
-    var is_adjs_suc = false;
-    var ad_id = '';
+    var is_adjs_suc = null;
+    var ad = [];
 
     var gtm = [];
     var gtm_datahub = [];
     var collect = [];
+
+    var atm = [];
 
     requests.forEach(function(obj){
         var parser = document.createElement('a');
         parser.href = obj.url;
         query_string = getJsonFromUrl(parser.search);
 
+        // ATM
+        if (obj.url.match(/\/\/stg-d\.adbert\.com\.tw\/analytics\.js/g)) {
+            if (obj.statusCode == 200) {
+                atm.push({'aid': query_string['id'], 'ret' : true});
+            } else {
+                atm.push({'aid': query_string['id'], 'ret' : false});
+            }
+        }
+
+        //GTM
         if (obj.url.match(/www\.googletagmanager\.com\/gtm\.js/g)) {
             if (obj.statusCode == 200) {
                 gtm.push({'gtm': query_string['id'], 'ret' : true});
             } else {
                 gtm.push({'gtm': query_string['id'], 'ret' : false});
             }
-        }else if (obj.url.match(/www\.googleadservices\.com\/pagead\/(conversion|conversion_async)\.js/g) && obj.statusCode == 200) {
-            is_adjs_suc = true;
-        } else if (obj.url.match(/www\.google-analytics\.com\/analytics\.js/g) && obj.statusCode == 200) {
-            is_gajs_suc = true;
-        } else if (obj.url.match(/connect\.facebook\.net\/en_US\/fbevents\.js/g) && obj.statusCode == 200) {
+        }
+
+        //adword js
+        if (obj.url.match(/www\.googleadservices\.com\/pagead\/(conversion|conversion_async)\.js/g)) {
+            if (obj.statusCode == 200) {
+                is_adjs_suc = true;
+            } else {
+                is_adjs_suc = false;
+            }
+        }
+
+        //GA JS FILE
+        if (obj.url.match(/www\.google-analytics\.com\/analytics\.js/g)) {
+
+            if (obj.statusCode == 200) {
+                is_gajs_suc = true;
+            } else {
+                is_gajs_suc = false;
+            }
+        }
+
+        if (obj.url.match(/connect\.facebook\.net\/en_US\/fbevents\.js/g)) {
             is_fbjs_suc = (obj.statusCode == 200) ? true : false;
-        } else if (obj.url.match(/https:\/\/www\.facebook\.com\/tr\/\?.*/g)  && obj.statusCode == 200) {
-            if (query_string['id']) {
-                fb_id = query_string['id'];
-            }
+        }
 
-            if (query_string['ev'] == 'PageView' && obj.statusCode == 200) {
-                is_fbpageview_suc = true;
-            }
+        if (obj.url.match(/https:\/\/www\.facebook\.com\/tr\/\?.*/g)) {
 
-            if (query_string['ev'] == 'Microdata' && obj.statusCode == 200) {
-                is_fbMicrodata_suc = true;
+            if (obj.statusCode == 200) {
+                fb.push({'fid': query_string['id'], 'ret' : true, 'ev' : query_string['ev']});
+            } else {
+                fb.push({'fid': query_string['id'], 'ret' : false, 'ev' : query_string['ev']});
             }
+        }
 
-        } else if (obj.url.match(/www\.google-analytics\.com\/collect\?/g)) {
-            if (query_string['tid']  && obj.statusCode == 200) {
-                ga_id = query_string['tid'];
-                is_gapageview_suc = true;
+
+        // GA
+        if (obj.url.match(/www\.google-analytics\.com\/collect\?/g)) {
+
+            if (obj.statusCode == 200) {
+                ga.push({'gaid': query_string['tid'], 'ret' : true});
+            } else {
+                ga.push({'gaid': query_string['tid'], 'ret' : false});
             }
 
             if (query_string['gtm'] && query_string['tid']) {
@@ -133,47 +163,59 @@ var createHtml = function (requests){
                     collect.push({'tid': query_string['tid'], 'gtm': query_string['gtm'], 'ret': false});
                 }
             }
+        }
 
-        } else if (obj.url.match(/stats\.g\.doubleclick\.net\/r\/collect\?/g)) {
-            if (query_string['tid']  && obj.statusCode == 200) {
-                ga_id = query_string['tid'];
-                is_gapageview_suc = true;
-            }
-        } else if (obj.url.match(/www\.google\.com\.tw\/ads\/user-lists\/([0-9]+)\/\?random*/g) &&
-        obj.statusCode == 200) {
-            ad_id = obj.url.match(/(\d+)/i)[0];
-            is_adpageview_suc = true;
-        } else if (obj.url.match(/in\.datahub\.events\/\w+\?/g)) {
+        if (obj.url.match(/stats\.g\.doubleclick\.net\/r\/collect\?/g)) {
             if (obj.statusCode == 200) {
-                gtm_datahub.push({'gtm': query_string['gtm'], 'ret' : true});
+                ga.push({'gaid': query_string['tid'], 'ret' : true});
             } else {
-                gtm_datahub.push({'gtm': query_string['gtm'], 'ret' : false});
+                ga.push({'gaid': query_string['tid'], 'ret' : false});
             }
         }
+        if (obj.url.match(/www\.google\.com\.tw\/ads\/user-lists\/([0-9]+)\/\?random*/g)) {
+            var ad_id = obj.url.match(/(\d+)/i)[0];
+
+            if (obj.statusCode == 200) {
+                ad.push({'adid': ad_id, 'ret' : true});
+            } else {
+                ad.push({'adid': ad_id, 'ret' : false});
+            }
+        }
+
+        //暫時不使用
+       // if (obj.url.match(/in\.datahub\.events\/\w+\?/g)) {
+       //     if (obj.statusCode == 200) {
+       //         gtm_datahub.push({'gtm': query_string['gtm'], 'ret' : true});
+       //     } else {
+       //         gtm_datahub.push({'gtm': query_string['gtm'], 'ret' : false});
+       //     }
+       // }
+    });
+    showalltbode();
+
+    appendAtmTr({
+        atm:atm
     });
 
     appendGtmTr({
         gtm:gtm,
-        gtm_datahub:gtm_datahub,
+//        gtm_datahub:gtm_datahub,
         collect:collect
     });
 
     appendFbTr({
         is_js_suc:is_fbjs_suc,
-        is_pageview_suc:is_fbpageview_suc,
-        is_Microdata_suc:is_fbMicrodata_suc,
-        id:fb_id
+        fb:fb
     });
 
     appendAdTr({
         is_js_suc:is_adjs_suc,
-        id:ad_id
+        ad:ad
     });
 
     appendGaTr({
         is_js_suc:is_gajs_suc,
-        is_pageview_suc:is_gapageview_suc,
-        id:ga_id
+        ga:ga
     });
 
     _request_header = [];
@@ -181,172 +223,187 @@ var createHtml = function (requests){
 
     chrome.webRequest.onCompleted.removeListener(webRequestCallback);
     chrome.tabs.onUpdated.removeListener(webUpdatedCallback);
-    //  console.log('webRequest reseting!!!');
+
     bindWebRequestListener = undefined;
     bindPageUpdatedListener = undefined;
     hideLoadingPage();
 }
 
+var hideTable = function(table_name, title_name){
+    var _table_dom = $('#' + table_name);
+    var _title_dom = $('#' + title_name);
+    _table_dom.parents('.panel-body').hide();
+    _title_dom.append('<span> is empty !</span>')
+}
+
+var appendAtmTr = function(ret) {
+    var _table = document.getElementById("atmtable").tBodies[0];
+
+    if (ret.atm.length == 0) {
+        return hideTable('atmtable', 'atmtitle');
+    }
+   
+    ret.atm.forEach(function(value, index) {
+        var _row = _table.insertRow(_table.rows.length);
+        var cell1 = _row.insertCell(0);
+
+        if (! value.ret) {
+            cell1.appendChild(getFailDom());
+        } else {
+            cell1.appendChild(getSpanDom(value.aid));
+            cell1.appendChild(getSuccessDom());
+        }
+    });
+}
+
 var appendGtmTr = function(ret) {
     var _table = document.getElementById("gtmtable").tBodies[0];
 
-    console.log(ret);
+    if (ret.gtm.length == 0) {
+        return hideTable('gtmtable', 'gtmtitle');
+    }
+
+
     ret.gtm.forEach(function(value, index) {
-        var item = [];
-        
-        item['gid'] = (value.ret) ? value.gtm : false;
-        item['data'] = false;
-        item['tid'] = false;
 
-        ret.gtm_datahub.forEach(function(gvalue, gindex) {
-            if (item['gid'] == gvalue['gtm'] && gvalue.ret) {
-                item['data'] = true;
-            }
-        });
+       // ret.gtm_datahub.forEach(function(gvalue, gindex) {
+       //     if (item['gid'] == gvalue['gtm'] && gvalue.ret) {
+       //         item['data'] = true;
+       //     }
+       // });
 
+        var cllect_suc = null;
+        var cllect_id = '';
         ret.collect.forEach(function(cvalue, cindex) {
-            if (cvalue['gtm'] ==  item['gid'] && cvalue.ret) {
-                item['tid'] = cvalue['tid'];
+            if (cvalue['gtm'] !=  value.gtm) {
+                return;
             }
+            cllect_suc = cvalue.ret;
+            cllect_id = cvalue['tid'];
         });
 
-        console.log(item);
+//        console.log(getSuccessDom(value.gtm));
         var _row = _table.insertRow(_table.rows.length);
         var cell1 = _row.insertCell(0);
         var cell2 = _row.insertCell(1);
-        var cell3 = _row.insertCell(2);
 
-        if (! item['gid']) {
-            gtm_dom = getFailImg();
+        if (! value.ret) {
+            cell1.appendChild(getFailDom());
         } else {
-            gtm_dom = document.createTextNode(item['gid']);
+            cell1.appendChild(getSpanDom(value.gtm));
+            cell1.appendChild(getSuccessDom());
         }
 
-        if (! item['tid']) {
-            ga_dom = getFailImg();
-        } else {
-            ga_dom = document.createTextNode(item['tid']);
+        if (cllect_suc == null) {
+            return;
         }
 
-
-        if (! item['data']) {
-            gtm_datahub_dom = getFailImg();
+        if (! cllect_suc) {
+            cell2.appendChild(getFailDom());
         } else {
-            gtm_datahub_dom = getSuccessImg();
+            cell2.appendChild(getSpanDom(cllect_id));
+            cell2.appendChild(getSuccessDom());
         }
-
-        cell1.appendChild(gtm_dom);
-        cell2.appendChild(ga_dom);
-        cell3.appendChild(gtm_datahub_dom);
     });
 }
 
 var appendAdTr = function(ret){
     var _table = document.getElementById("adtable").tBodies[0];
 
-    var _row = _table.insertRow(_table.rows.length);
-    var cell1 = _row.insertCell(0);
-    var cell2 = _row.insertCell(1);
-
-    var id_dom,
-    jf_dom;
-
-    if (ret.id == '') {
-        id_dom = getFailImg();
-    } else {
-        id_dom = document.createTextNode(ret.id);
+    if (ret.ad.length == 0) {
+        return hideTable('adtable', 'adtitle');
     }
 
-    if (ret.is_js_suc) {
-        jf_dom = getSuccessImg();
-    } else {
-        jf_dom = getFailImg();
-    }
+    console.log(ret);
+    ret.ad.forEach(function(value, index) {
+        var _row = _table.insertRow(_table.rows.length);
+        var cell1 = _row.insertCell(0);
+        var cell2 = _row.insertCell(1);
 
-    cell1.appendChild(id_dom);
-    cell2.appendChild(jf_dom);
+        if (! value.ret) {
+            cell1.appendChild(getFailDom());
+        } else {
+            cell1.appendChild(getSpanDom(value.adid));
+            cell1.appendChild(getSuccessDom());
+        }
+
+        if (! ret.is_js_suc) {
+            cell2.appendChild(getFailDom());
+        } else {
+            cell2.appendChild(getSuccessDom());
+        }
+    });
+
 }
 
 var appendGaTr = function(ret){
     var _table = document.getElementById("gatable").tBodies[0];
 
-    var _row = _table.insertRow(_table.rows.length);
-    var cell1 = _row.insertCell(0);
-    var cell2 = _row.insertCell(1);
-    var cell3 = _row.insertCell(2);
-
-    var id_dom,
-    pv_dom,
-    jf_dom;
-
-    if (ret.id == '') {
-        id_dom = getFailImg();
-    } else {
-        id_dom = document.createTextNode(ret.id);
+    if (ret.ga.length == 0) {
+        return hideTable('gatable', 'gatitle');
     }
 
-    if (ret.is_pageview_suc) {
-        pv_dom = getSuccessImg();
-    } else {
-        pv_dom = getFailImg();
-    }
+    ret.ga.forEach(function(value, index) {
+        var _row = _table.insertRow(_table.rows.length);
+        var cell1 = _row.insertCell(0);
+        var cell2 = _row.insertCell(1);
 
-    if (ret.is_js_suc) {
-        jf_dom = getSuccessImg();
-    } else {
-        jf_dom = getFailImg();
-    }
+        if (! value.ret) {
+            cell1.appendChild(getFailDom());
+        } else {
+            cell1.appendChild(getSpanDom(value.gaid));
+            cell1.appendChild(getSuccessDom());
+        }
 
-    cell1.appendChild(id_dom);
-    cell2.appendChild(pv_dom);
-    cell3.appendChild(jf_dom);
+    
+        if (! ret.is_js_suc) {
+            cell2.appendChild(getFailDom());
+        } else {
+            cell2.appendChild(getSuccessDom());
+        }
+
+    });
 }
 
 var appendFbTr = function(ret){
     var _table = document.getElementById("fbtable").tBodies[0];
 
-    var _row = _table.insertRow(_table.rows.length);
-    var cell1 = _row.insertCell(0);
-    var cell2 = _row.insertCell(1);
-//    var cell3 = _row.insertCell(2);
-    var cell4 = _row.insertCell(2);
-
-    var id_dom,
-    pv_dom,
-    ms_dom,
-    jf_dom;
-
-    if (ret.id == '') {
-        id_dom = getFailImg();
-    } else {
-        id_dom = document.createTextNode(ret.id);
+    if (ret.fb.length == 0) {
+        return hideTable('fbtable', 'fbtitle');
     }
 
-    if (ret.is_pageview_suc) {
-        pv_dom = getSuccessImg();
-    } else {
-        pv_dom = getFailImg();
-    }
+    ret.fb.forEach(function(value, index) {
+        if (value.ev != 'PageView') {
+            return;
+        }
+        var _row = _table.insertRow(_table.rows.length);
+        var cell1 = _row.insertCell(0);
+        var cell2 = _row.insertCell(1);
 
-    if (ret.is_Microdata_suc) {
-        ms_dom = getSuccessImg();
-    } else {
-        ms_dom = getFailImg();
-    }
+        if (! value.ret) {
+            cell1.appendChild(getFailDom());
+        } else {
+            cell1.appendChild(getSpanDom(value.fid));
+            cell1.appendChild(getSuccessDom());
+        }
 
-    if (ret.is_js_suc) {
-        jf_dom = getSuccessImg();
-    } else {
-        jf_dom = getFailImg();
-    }
+    
+        if (! ret.is_js_suc) {
+            cell2.appendChild(getFailDom());
+        } else {
+            cell2.appendChild(getSuccessDom());
+        }
 
-    cell1.appendChild(id_dom);
-    cell2.appendChild(pv_dom);
-  //  cell3.appendChild(ms_dom);
-    cell4.appendChild(jf_dom);
+    });
 }
 
-var getSuccessImg = function(){
+var getSpanDom = function(str){
+        span = document.createElement('span');
+        span.innerHTML = str;
+        return span;
+}
+
+var getSuccessDom = function(){
     var img = document.createElement('img');
     img.src = "images/1495106873_Tick_Mark_Dark.png";
     img.width = '20';
@@ -354,7 +411,7 @@ var getSuccessImg = function(){
     return img;
 }
 
-var getFailImg = function(){
+var getFailDom = function(){
     var img = document.createElement('img');
     img.src = "images/1495106894_Close_Icon.png";
     img.width = '20';
