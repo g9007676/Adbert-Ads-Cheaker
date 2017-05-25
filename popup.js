@@ -4,9 +4,11 @@ var bindWebRequestListener;
 var bindPageUpdatedListener;;
 
 $( document ).ready(function() {
+    hidealltbode();
 
     $('#start').on('click', function() {
         $('tbody').html('');
+        $('.panel-heading').find('span').remove();
         showLoadingPage();
         $(this).attr('disabled', true);
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
