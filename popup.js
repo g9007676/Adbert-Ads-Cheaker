@@ -48,6 +48,13 @@ var hideLoadingPage = function(){
     $('.bg').hide();
     $('.bg').css('overflow', 'visible');
 }
+var hidealltbode = function() {
+    $('.panel-body').hide();
+}
+
+var showalltbode = function() {
+    $('.panel-body').show();
+}
 
 var webUpdatedCallback = function(tabId , info) {
     if (info.status == "complete") {
